@@ -1,38 +1,349 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Professional IQ Test - measure your intelligence with our comprehensive cognitive assessment">
+  <meta name="theme-color" content="#2196F3">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="iq_test">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IQ Test">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+  <link rel="shortcut icon" href="icons/favicon.ico">
 
-  <title>iq_test</title>
+  <title>IQ Test - Professional Intelligence Assessment</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="flutter_bootstrap.js" as="script">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: white;
+    }
+    
+    .loading-container {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .brain-loader {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 2rem;
+      position: relative;
+    }
+    
+    .brain {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      position: relative;
+      animation: pulse 2s ease-in-out infinite;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .brain::before,
+    .brain::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      animation: brainPulse 2s ease-in-out infinite;
+    }
+    
+    .brain::before {
+      width: 20px;
+      height: 20px;
+      top: 15px;
+      left: 15px;
+      animation-delay: 0s;
+    }
+    
+    .brain::after {
+      width: 15px;
+      height: 15px;
+      bottom: 20px;
+      right: 20px;
+      animation-delay: 0.5s;
+    }
+    
+    .loading-text {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      letter-spacing: 1px;
+    }
+    
+    .loading-subtext {
+      font-size: 0.9rem;
+      font-weight: 300;
+      opacity: 0.8;
+      margin-bottom: 2rem;
+    }
+    
+    .progress-bar {
+      width: 200px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ffd89b, #19547b);
+      border-radius: 10px;
+      animation: progressAnimation 3s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(255, 216, 155, 0.5);
+    }
+    
+    .particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+    
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+      }
+    }
+    
+    @keyframes brainPulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+      50% {
+        transform: scale(1.3);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes progressAnimation {
+      0% {
+        width: 0%;
+        transform: translateX(-100%);
+      }
+      50% {
+        width: 70%;
+      }
+      100% {
+        width: 100%;
+        transform: translateX(0%);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+      10%, 90% {
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-100px) rotate(180deg);
+      }
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .loading-text {
+        font-size: 1.2rem;
+      }
+      
+      .loading-subtext {
+        font-size: 0.8rem;
+      }
+      
+      .brain-loader {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .progress-bar {
+        width: 150px;
+      }
+    }
+    
+    /* Темная тема */
+    @media (prefers-color-scheme: dark) {
+      #loading {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- Красивая анимация загрузки -->
+  <div id="loading">
+    <div class="particles" id="particles"></div>
+    <div class="loading-container">
+      <div class="brain-loader">
+        <div class="brain"></div>
+      </div>
+      <div class="loading-text">Loading IQ Test</div>
+      <div class="loading-subtext">Preparing your cognitive assessment...</div>
+      <div class="progress-bar">
+        <div class="progress"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Создание частиц для фона
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 15;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Случайные параметры
+        const size = Math.random() * 6 + 2;
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const duration = Math.random() * 3 + 4;
+        
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${posX}%`;
+        particle.style.top = `${posY}%`;
+        particle.style.animationDelay = `${delay}s`;
+        particle.style.animationDuration = `${duration}s`;
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
+    // Симуляция прогресса загрузки
+    function simulateProgress() {
+      const progress = document.querySelector('.progress');
+      let width = 0;
+      
+      const interval = setInterval(() => {
+        if (width >= 100) {
+          clearInterval(interval);
+        } else {
+          width += Math.random() * 10;
+          progress.style.width = `${Math.min(width, 100)}%`;
+        }
+      }, 200);
+    }
+    
+    // Случайные сообщения во время загрузки
+    const loadingMessages = [
+      "Analyzing patterns...",
+      "Loading questions...",
+      "Preparing timer...",
+      "Calibrating difficulty...",
+      "Almost ready..."
+    ];
+    
+    function rotateMessages() {
+      const subtext = document.querySelector('.loading-subtext');
+      let index = 0;
+      
+      setInterval(() => {
+        subtext.style.opacity = '0';
+        setTimeout(() => {
+          subtext.textContent = loadingMessages[index];
+          subtext.style.opacity = '0.8';
+          index = (index + 1) % loadingMessages.length;
+        }, 500);
+      }, 2000);
+    }
+    
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+      createParticles();
+      simulateProgress();
+      rotateMessages();
+      
+      // Скрытие загрузки когда Flutter готов
+      window.addEventListener('flutter-first-frame', function() {
+        setTimeout(function() {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.opacity = '0';
+            loading.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+              loading.style.display = 'none';
+            }, 500);
+          }
+        }, 1000);
+      });
+      
+      // Fallback - скрыть через 5 секунд если Flutter не загрузился
+      setTimeout(function() {
+        const loading = document.getElementById('loading');
+        if (loading && loading.style.display !== 'none') {
+          loading.style.opacity = '0';
+          loading.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            loading.style.display = 'none';
+          }, 500);
+        }
+      }, 5000);
+    });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

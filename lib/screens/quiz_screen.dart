@@ -4,22 +4,25 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/quiz_provider.dart';
 import './result_screen.dart';
 import '../background_video.dart';
+import '../sound_service.dart';
 
 class QuizScreen extends StatefulWidget {
+  const QuizScreen({super.key});
+
   @override
-  _QuizScreenState createState() => _QuizScreenState();
+  QuizScreenState createState() => QuizScreenState();
 }
 
-class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
+class QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   late AnimationController _answerAnimationController;
-  int? _selectedAnswerIndex; // Для отслеживания выбранного ответа
-  bool _isAnswering = false; // Флаг для блокировки множественных нажатий
+  int? _selectedAnswerIndex;
+  bool _isAnswering = false;
 
   @override
   void initState() {
     super.initState();
     _answerAnimationController = AnimationController(
-      duration: Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     _selectedAnswerIndex = null;
@@ -32,9 +35,10 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _onAnswerSelected(int index, QuizProvider quizProvider) {
-    // Защита от множественных нажатий
+  void _onAnswerSelected(int index, QuizProvider quizProvider) async {
     if (_isAnswering) return;
+    
+    await SoundService.playAnswerSound();
     
     setState(() {
       _isAnswering = true;
@@ -45,8 +49,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       quizProvider.answerQuestion(index);
       _answerAnimationController.reset();
       
-      // Сбрасываем выбранный ответ после анимации
-      Future.delayed(Duration(milliseconds: 300), () {
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           setState(() {
             _selectedAnswerIndex = null;
@@ -55,13 +58,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         }
       });
       
-      // Если тест завершен, переходим на экран результатов
       if (quizProvider.isTestComplete) {
-        Future.delayed(Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => ResultScreen()),
+              MaterialPageRoute(builder: (context) => const ResultScreen()),
             );
           }
         });
@@ -73,7 +75,6 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final quizProvider = Provider.of<QuizProvider>(context);
 
-    // Если тест завершен, показываем индикатор загрузки
     if (quizProvider.isTestComplete) {
       return Scaffold(
         backgroundColor: Colors.transparent,
@@ -81,13 +82,13 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 20),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
               Text(
                 quizProvider.selectedLanguage == 'ru' 
                   ? 'Подсчет результатов...' 
                   : 'Ergebnisse werden berechnet...',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
             ],
           ),
@@ -107,15 +108,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
-                // Прогресс бар и номер вопроса
                 _buildProgressHeader(progress, quizProvider),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 
-                // Анимированная карточка вопроса
                 _buildQuestionCard(question, quizProvider),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 
-                // Сетка ответов с анимациями
                 Expanded(
                   child: _buildAnswersGrid(question, quizProvider),
                 ),
@@ -153,8 +151,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        SizedBox(height: 10),
-        // Кастомный прогресс-бар
+        const SizedBox(height: 10),
         Container(
           height: 12,
           decoration: BoxDecoration(
@@ -166,8 +163,8 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
               Container(
                 width: MediaQuery.of(context).size.width * progress,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade600, Colors.purple.shade600],
+                  gradient: const LinearGradient(
+                    colors: [Colors.blue, Colors.purple],
                   ),
                   borderRadius: BorderRadius.circular(6),
                 ),
@@ -186,17 +183,17 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   Widget _buildQuestionCard(Map<String, dynamic> question, QuizProvider quizProvider) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.blue.shade600, Colors.purple.shade600],
+          colors: [Colors.blue, Colors.purple],
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Color.fromRGBO(30, 136, 229, 0.3),
             blurRadius: 15,
             offset: Offset(0, 8),
           ),
@@ -206,7 +203,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
         children: [
           Text(
             question['question'][quizProvider.selectedLanguage],
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -226,7 +223,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
     final answers = question['answers'][quizProvider.selectedLanguage];
     
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 15,
         mainAxisSpacing: 15,
@@ -235,26 +232,27 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
       itemCount: answers.length,
       itemBuilder: (context, index) {
         final isSelected = _selectedAnswerIndex == index;
+        final answerColor = _getAnswerColor(index);
         
         return GestureDetector(
           onTap: () => _onAnswerSelected(index, quizProvider),
           child: AnimatedContainer(
-            duration: Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
-              color: _getAnswerColor(index).withOpacity(isSelected ? 0.9 : 1.0),
+              color: _withOpacity(answerColor, isSelected ? 0.9 : 1.0),
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 if (isSelected)
                   BoxShadow(
-                    color: _getAnswerColor(index).withOpacity(0.6),
+                    color: _withOpacity(answerColor, 0.6),
                     blurRadius: 25,
                     spreadRadius: 5,
-                    offset: Offset(0, 8),
+                    offset: const Offset(0, 8),
                   )
                 else
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                  const BoxShadow(
+                    color: Color.fromRGBO(0, 0, 0, 0.15),
                     blurRadius: 10,
                     offset: Offset(0, 5),
                   ),
@@ -269,7 +267,7 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: AnimatedDefaultTextStyle(
-                      duration: Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 300),
                       style: TextStyle(
                         fontSize: isSelected ? 18 : 16,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -286,10 +284,12 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   top: 10,
                   right: 10,
                   child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 300),
                     padding: EdgeInsets.all(isSelected ? 8 : 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(isSelected ? 0.4 : 0.2),
+                      color: isSelected 
+                          ? const Color.fromRGBO(255, 255, 255, 0.4)
+                          : const Color.fromRGBO(255, 255, 255, 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -303,17 +303,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 
-                // Эффект выделения при выборе
                 if (isSelected)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(15),
-                        gradient: RadialGradient(
+                        gradient: const RadialGradient(
                           center: Alignment.center,
                           radius: 0.8,
                           colors: [
-                            Colors.white.withOpacity(0.4),
+                            Color.fromRGBO(255, 255, 255, 0.4),
                             Colors.transparent,
                           ],
                         ),
@@ -332,12 +331,16 @@ class _QuizScreenState extends State<QuizScreen> with TickerProviderStateMixin {
   }
 
   Color _getAnswerColor(int index) {
-    final colors = [
-      Colors.blue.shade500,
-      Colors.green.shade500,
-      Colors.orange.shade500,
-      Colors.pink.shade500,
+    const colors = <Color>[
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.pink,
     ];
     return colors[index % colors.length];
+  }
+
+  Color _withOpacity(Color color, double opacity) {
+    return color.withAlpha((opacity * 255).round());
   }
 }
