@@ -3,12 +3,26 @@ import 'package:provider/provider.dart';
 import 'providers/quiz_provider.dart';
 import 'screens/home_screen.dart';
 import 'background_video.dart';
+import 'sound_service.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  const MyApp({super.key}); // Исправлено: добавлен параметр key
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void dispose() {
+    SoundService.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -19,9 +33,8 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           useMaterial3: true,
         ),
-        home: BackgroundVideo(child: HomeScreen()),
+        home: const BackgroundVideo(child: HomeScreen()), // Исправлено: добавлен const
         debugShowCheckedModeBanner: false,
-        // Убрали navigatorObservers
       ),
     );
   }

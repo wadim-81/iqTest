@@ -4,11 +4,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/quiz_provider.dart';
 import './home_screen.dart';
 import '../background_video.dart';
+import '../sound_service.dart';
 
 class ResultScreen extends StatelessWidget {
+  const ResultScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return BackgroundVideo(
+    return const BackgroundVideo(
       withSound: true,
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -19,6 +22,8 @@ class ResultScreen extends StatelessWidget {
 }
 
 class _ResultContent extends StatefulWidget {
+  const _ResultContent();
+
   @override
   __ResultContentState createState() => __ResultContentState();
 }
@@ -27,7 +32,10 @@ class __ResultContentState extends State<_ResultContent> {
   late int _displayedScore;
   bool _showDetails = false;
   bool _showQuestions = false;
-  int? _selectedQuestionIndex; // Для анимации выделения вопроса
+  int? _selectedQuestionIndex;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasScrolledToBottom = false;
+  bool _completionSoundPlayed = false;
 
   @override
   void initState() {
@@ -38,11 +46,17 @@ class __ResultContentState extends State<_ResultContent> {
     });
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _startAnimations() {
     final quizProvider = Provider.of<QuizProvider>(context, listen: false);
     final finalScore = quizProvider.calculateScore();
     
-    Future.delayed(Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       void updateScore() {
         if (mounted) {
           setState(() {
@@ -52,13 +66,19 @@ class __ResultContentState extends State<_ResultContent> {
             }
           });
           if (_displayedScore < finalScore) {
-            Future.delayed(Duration(milliseconds: 30), updateScore);
+            Future.delayed(const Duration(milliseconds: 30), updateScore);
           } else {
-            Future.delayed(Duration(milliseconds: 500), () {
+            Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) {
                 setState(() {
                   _showDetails = true;
                 });
+                _scrollToBottom(delay: 300);
+                
+                if (!_completionSoundPlayed) {
+                  _playCompletionSound();
+                  _completionSoundPlayed = true;
+                }
               }
             });
           }
@@ -68,10 +88,47 @@ class __ResultContentState extends State<_ResultContent> {
     });
   }
 
-  void _onQuestionTap(int index) {
+  void _playCompletionSound() {
+    SoundService.playStartSound();
+  }
+
+  void _onQuestionTap(int index) async {
+    await SoundService.playToggleSound();
     setState(() {
       _selectedQuestionIndex = _selectedQuestionIndex == index ? null : index;
     });
+  }
+
+  void _scrollToBottom({int delay = 0}) {
+    if (_hasScrolledToBottom) return;
+    
+    Future.delayed(Duration(milliseconds: delay), () {
+      if (!mounted) return;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 2000),
+            curve: Curves.easeInOut,
+          ).then((_) {
+            _hasScrolledToBottom = true;
+          });
+        }
+      });
+    });
+  }
+
+  void _handleBackButton(QuizProvider quizProvider) async {
+    await SoundService.playBackSound();
+    
+    if (!mounted) return;
+    
+    quizProvider.resetTest();
+    
+    if (!mounted) return;
+    
+    Navigator.pop(context);
   }
 
   @override
@@ -85,22 +142,25 @@ class __ResultContentState extends State<_ResultContent> {
         child: Column(
           children: [
             _buildHeader(quizProvider),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             
             Expanded(
               child: SingleChildScrollView(
-                physics: BouncingScrollPhysics(),
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
                     _buildResultCard(score, quizProvider),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     
                     if (_showDetails) _buildDetails(quizProvider),
                     
                     if (_showQuestions) 
                       _buildQuestionsReview(quizProvider),
                     
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
+                    
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -116,9 +176,9 @@ class __ResultContentState extends State<_ResultContent> {
   Widget _buildHeader(QuizProvider quizProvider) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: const Color.fromRGBO(255, 255, 255, 0.9),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 8,
@@ -129,13 +189,10 @@ class __ResultContentState extends State<_ResultContent> {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              quizProvider.resetTest();
-              Navigator.pop(context);
-            },
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _handleBackButton(quizProvider),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Text(
             quizProvider.selectedLanguage == 'ru' ? 'Результат' : 'Ergebnis',
             style: TextStyle(
@@ -169,17 +226,17 @@ class __ResultContentState extends State<_ResultContent> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(30),
+      padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.blue.shade600, Colors.purple.shade600],
+          colors: [Colors.blue, Colors.purple],
         ),
         borderRadius: BorderRadius.circular(25),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Color.fromRGBO(33, 150, 243, 0.3),
             blurRadius: 20,
             offset: Offset(0, 10),
           ),
@@ -195,11 +252,11 @@ class __ResultContentState extends State<_ResultContent> {
           .animate()
           .scale(duration: 800.ms, curve: Curves.elasticOut),
           
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           
           Text(
             quizProvider.selectedLanguage == 'ru' ? 'Тест завершен!' : 'Test abgeschlossen!',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -208,25 +265,25 @@ class __ResultContentState extends State<_ResultContent> {
           .animate()
           .fadeIn(delay: 300.ms),
           
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
           
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: const Color.fromRGBO(255, 255, 255, 0.1),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
+              border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3)),
             ),
             child: Column(
               children: [
                 Text(
                   quizProvider.selectedLanguage == 'ru' ? 'Ваш результат:' : 'Ihr Ergebnis:',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     color: Colors.white70,
                   ),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Text(
                   '$_displayedScore',
                   style: TextStyle(
@@ -236,11 +293,11 @@ class __ResultContentState extends State<_ResultContent> {
                   ),
                 ),
                 
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 
                 Text(
                   getIQLevel(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.amber,
@@ -265,11 +322,11 @@ class __ResultContentState extends State<_ResultContent> {
     
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: const Color.fromRGBO(255, 255, 255, 0.95),
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 15,
@@ -288,13 +345,13 @@ class __ResultContentState extends State<_ResultContent> {
               color: Colors.blue[900],
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           
           _buildProgressStats(quizProvider, correctAnswers, totalQuestions),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.blue[50],
               borderRadius: BorderRadius.circular(12),
@@ -312,14 +369,14 @@ class __ResultContentState extends State<_ResultContent> {
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.green[500],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '$correctAnswers/$totalQuestions',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -329,10 +386,10 @@ class __ResultContentState extends State<_ResultContent> {
               ],
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.green[50],
               borderRadius: BorderRadius.circular(12),
@@ -350,14 +407,14 @@ class __ResultContentState extends State<_ResultContent> {
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.blue[500],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${quizProvider.calculateScore()}%',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -368,21 +425,27 @@ class __ResultContentState extends State<_ResultContent> {
             ),
           ),
           
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           
-          Container(
+          SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                await SoundService.playToggleSound();
                 setState(() {
                   _showQuestions = !_showQuestions;
-                  _selectedQuestionIndex = null; // Сброс выделения при скрытии/показе
+                  _selectedQuestionIndex = null;
+                  _hasScrolledToBottom = false;
                 });
+                
+                if (_showQuestions) {
+                  _scrollToBottom(delay: 300);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange[500],
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -391,12 +454,12 @@ class __ResultContentState extends State<_ResultContent> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(_showQuestions ? Icons.visibility_off : Icons.visibility),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
                     _showQuestions 
                       ? (quizProvider.selectedLanguage == 'ru' ? 'Скрыть вопросы' : 'Fragen ausblenden')
                       : (quizProvider.selectedLanguage == 'ru' ? 'Показать вопросы' : 'Fragen anzeigen'),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -416,12 +479,12 @@ class __ResultContentState extends State<_ResultContent> {
   Widget _buildQuestionsReview(QuizProvider quizProvider) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(20),
-      margin: EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(top: 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: const Color.fromRGBO(255, 255, 255, 0.95),
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 15,
@@ -440,7 +503,7 @@ class __ResultContentState extends State<_ResultContent> {
               color: Colors.blue[900],
             ),
           ),
-          SizedBox(height: 15),
+          const SizedBox(height: 15),
           
           ..._buildQuestionList(quizProvider),
         ],
@@ -486,7 +549,7 @@ class __ResultContentState extends State<_ResultContent> {
       );
       
       if (i < quizProvider.questions.length - 1) {
-        questionWidgets.add(SizedBox(height: 15));
+        questionWidgets.add(const SizedBox(height: 15));
       }
     }
     
@@ -503,9 +566,9 @@ class __ResultContentState extends State<_ResultContent> {
     {bool isSelected = false}
   ) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isCorrect ? Colors.green[50] : Colors.red[50],
         borderRadius: BorderRadius.circular(12),
@@ -514,15 +577,15 @@ class __ResultContentState extends State<_ResultContent> {
           width: isSelected ? 3 : 1,
         ),
         boxShadow: isSelected ? [
-          BoxShadow(
-            color: Colors.amber.withOpacity(0.3),
+          const BoxShadow(
+            color: Color.fromRGBO(255, 193, 7, 0.3),
             blurRadius: 15,
             spreadRadius: 3,
             offset: Offset(0, 5),
           ),
         ] : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+          const BoxShadow(
+            color: Color.fromRGBO(0, 0, 0, 0.1),
             blurRadius: 5,
             offset: Offset(0, 2),
           ),
@@ -535,15 +598,15 @@ class __ResultContentState extends State<_ResultContent> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AnimatedContainer(
-                duration: Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 300),
                 width: isSelected ? 35 : 30,
                 height: isSelected ? 35 : 30,
                 decoration: BoxDecoration(
                   color: isCorrect ? Colors.green[500] : Colors.red[500],
                   shape: BoxShape.circle,
                   boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.5),
+                    const BoxShadow(
+                      color: Color.fromRGBO(255, 193, 7, 0.5),
                       blurRadius: 10,
                       spreadRadius: 2,
                     )
@@ -551,7 +614,7 @@ class __ResultContentState extends State<_ResultContent> {
                 ),
                 child: Center(
                   child: AnimatedDefaultTextStyle(
-                    duration: Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -561,13 +624,13 @@ class __ResultContentState extends State<_ResultContent> {
                   ),
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AnimatedDefaultTextStyle(
-                      duration: Duration(milliseconds: 300),
+                      duration: const Duration(milliseconds: 300),
                       style: TextStyle(
                         fontSize: isSelected ? 18 : 16,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
@@ -575,7 +638,7 @@ class __ResultContentState extends State<_ResultContent> {
                       ),
                       child: Text(question),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     
                     Row(
                       children: [
@@ -584,7 +647,7 @@ class __ResultContentState extends State<_ResultContent> {
                           color: isCorrect ? Colors.green : Colors.red,
                           size: isSelected ? 18 : 16,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Text(
                           quizProvider.selectedLanguage == 'ru' 
                             ? 'Ваш ответ: ' 
@@ -595,7 +658,7 @@ class __ResultContentState extends State<_ResultContent> {
                           ),
                         ),
                         AnimatedDefaultTextStyle(
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           style: TextStyle(
                             fontSize: isSelected ? 15 : 14,
                             fontWeight: FontWeight.w600,
@@ -607,7 +670,7 @@ class __ResultContentState extends State<_ResultContent> {
                     ),
                     
                     if (!isCorrect) ...[
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Row(
                         children: [
                           Icon(
@@ -615,7 +678,7 @@ class __ResultContentState extends State<_ResultContent> {
                             color: Colors.green,
                             size: isSelected ? 18 : 16,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
                             quizProvider.selectedLanguage == 'ru' 
                               ? 'Правильный ответ: ' 
@@ -626,7 +689,7 @@ class __ResultContentState extends State<_ResultContent> {
                             ),
                           ),
                           AnimatedDefaultTextStyle(
-                            duration: Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 300),
                             style: TextStyle(
                               fontSize: isSelected ? 15 : 14,
                               fontWeight: FontWeight.w600,
@@ -643,13 +706,12 @@ class __ResultContentState extends State<_ResultContent> {
             ],
           ),
           
-          // Анимация появления дополнительной информации при выделении
           if (isSelected) ...[
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             AnimatedContainer(
-              duration: Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 500),
               curve: Curves.easeOut,
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.amber[50],
                 borderRadius: BorderRadius.circular(8),
@@ -658,7 +720,7 @@ class __ResultContentState extends State<_ResultContent> {
               child: Row(
                 children: [
                   Icon(Icons.info_outline, color: Colors.amber[700], size: 20),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       isCorrect 
@@ -687,7 +749,7 @@ class __ResultContentState extends State<_ResultContent> {
     final percentage = correct / total;
     
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
@@ -704,7 +766,7 @@ class __ResultContentState extends State<_ResultContent> {
               color: Colors.grey[800],
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           
           Container(
             height: 16,
@@ -717,8 +779,8 @@ class __ResultContentState extends State<_ResultContent> {
                 Container(
                   width: MediaQuery.of(context).size.width * percentage,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green.shade600, Colors.blue.shade600],
+                    gradient: const LinearGradient(
+                      colors: [Colors.green, Colors.blue],
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -726,7 +788,7 @@ class __ResultContentState extends State<_ResultContent> {
               ],
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -754,56 +816,67 @@ class __ResultContentState extends State<_ResultContent> {
     );
   }
 
-  Widget _buildRestartButton(QuizProvider quizProvider) {
-    return Container(
-      width: double.infinity,
-      height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 5),
+Widget _buildRestartButton(QuizProvider quizProvider) {
+  return Container(
+    width: double.infinity,
+    height: 60,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(15),
+      boxShadow: const [
+        BoxShadow(
+          color: Color.fromRGBO(33, 150, 243, 0.3),
+          blurRadius: 10,
+          offset: Offset(0, 5),
+        ),
+      ],
+    ),
+    child: ElevatedButton(
+      onPressed: () => _handleRestartButton(quizProvider), // Вынесено в отдельный метод
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue[600],
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.refresh_rounded),
+          const SizedBox(width: 8),
+          Text(
+            quizProvider.selectedLanguage == 'ru' 
+              ? 'Пройти еще раз' 
+              : 'Nochmal versuchen',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: () {
-          quizProvider.resetTest();
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => BackgroundVideo(withSound: false, child: HomeScreen())),
-            (Route<dynamic> route) => false,
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[600],
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.refresh_rounded),
-            SizedBox(width: 8),
-            Text(
-              quizProvider.selectedLanguage == 'ru' 
-                ? 'Пройти еще раз' 
-                : 'Nochmal versuchen',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      )
-      .animate(delay: 1500.ms)
-      .fadeIn()
-      .slideY(begin: 1.0),
-    );
-  }
+    )
+    .animate(delay: 1500.ms)
+    .fadeIn()
+    .slideY(begin: 1.0),
+  );
 }
+
+// Добавьте этот метод в класс __ResultContentState
+void _handleRestartButton(QuizProvider quizProvider) async {
+  await SoundService.playRestartSound();
+  
+  // Проверяем mounted перед использованием контекста
+  if (!mounted) return;
+  
+  quizProvider.resetTest();
+  
+  // Еще раз проверяем mounted перед навигацией
+  if (!mounted) return;
+  
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => const BackgroundVideo(withSound: false, child: HomeScreen())),
+    (Route<dynamic> route) => false,
+  );
+}}
