@@ -109,7 +109,7 @@ class __ResultContentState extends State<_ResultContent> {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 2000),
+            duration: const Duration(milliseconds: 4000), // Увеличено с 2000 до 4000 мс
             curve: Curves.easeInOut,
           ).then((_) {
             _hasScrolledToBottom = true;
@@ -160,7 +160,10 @@ class __ResultContentState extends State<_ResultContent> {
                     
                     const SizedBox(height: 20),
                     
-                    const SizedBox(height: 40),
+                    // Добавлен дополнительный отступ для кнопки
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.bottom + 20,
+                    ),
                   ],
                 ),
               ),
@@ -439,7 +442,7 @@ class __ResultContentState extends State<_ResultContent> {
                 });
                 
                 if (_showQuestions) {
-                  _scrollToBottom(delay: 300);
+                  _scrollToBottom(delay: 500); // Увеличена задержка
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -629,75 +632,117 @@ class __ResultContentState extends State<_ResultContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 300),
-                      style: TextStyle(
-                        fontSize: isSelected ? 18 : 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: Colors.grey[800],
+                    // Вопрос с ограничением по ширине
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: double.infinity,
                       ),
-                      child: Text(question),
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 300),
+                        style: TextStyle(
+                          fontSize: isSelected ? 18 : 16,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                        child: Text(
+                          question,
+                          overflow: TextOverflow.visible,
+                          softWrap: true,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     
-                    Row(
-                      children: [
-                        Icon(
-                          isCorrect ? Icons.check : Icons.close,
-                          color: isCorrect ? Colors.green : Colors.red,
-                          size: isSelected ? 18 : 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          quizProvider.selectedLanguage == 'ru' 
-                            ? 'Ваш ответ: ' 
-                            : 'Ihre Antwort: ',
-                          style: TextStyle(
-                            fontSize: isSelected ? 15 : 14,
-                            color: Colors.grey[700],
+                    // Ответ пользователя с ограничением по ширине
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: double.infinity,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isCorrect ? Icons.check : Icons.close,
+                            color: isCorrect ? Colors.green : Colors.red,
+                            size: isSelected ? 18 : 16,
                           ),
-                        ),
-                        AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 300),
-                          style: TextStyle(
-                            fontSize: isSelected ? 15 : 14,
-                            fontWeight: FontWeight.w600,
-                            color: isCorrect ? Colors.green[700] : Colors.red[700],
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              quizProvider.selectedLanguage == 'ru' 
+                                ? 'Ваш ответ: ' 
+                                : 'Ihre Antwort: ',
+                              style: TextStyle(
+                                fontSize: isSelected ? 15 : 14,
+                                color: Colors.grey[700],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          child: Text(userAnswer),
-                        ),
-                      ],
+                          Expanded(
+                            flex: 2,
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 300),
+                              style: TextStyle(
+                                fontSize: isSelected ? 15 : 14,
+                                fontWeight: FontWeight.w600,
+                                color: isCorrect ? Colors.green[700] : Colors.red[700],
+                              ),
+                              child: Text(
+                                userAnswer,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     
                     if (!isCorrect) ...[
                       const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.check,
-                            color: Colors.green,
-                            size: isSelected ? 18 : 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            quizProvider.selectedLanguage == 'ru' 
-                              ? 'Правильный ответ: ' 
-                              : 'Richtige Antwort: ',
-                            style: TextStyle(
-                              fontSize: isSelected ? 15 : 14,
-                              color: Colors.grey[700],
+                      // Правильный ответ с ограничением по ширине
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: double.infinity,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check,
+                              color: Colors.green,
+                              size: isSelected ? 18 : 16,
                             ),
-                          ),
-                          AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 300),
-                            style: TextStyle(
-                              fontSize: isSelected ? 15 : 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green[700],
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                quizProvider.selectedLanguage == 'ru' 
+                                  ? 'Правильный ответ: ' 
+                                  : 'Richtige Antwort: ',
+                                style: TextStyle(
+                                  fontSize: isSelected ? 15 : 14,
+                                  color: Colors.grey[700],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            child: Text(correctAnswer),
-                          ),
-                        ],
+                            Expanded(
+                              flex: 2,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 300),
+                                style: TextStyle(
+                                  fontSize: isSelected ? 15 : 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green[700],
+                                ),
+                                child: Text(
+                                  correctAnswer,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ],
@@ -831,7 +876,7 @@ Widget _buildRestartButton(QuizProvider quizProvider) {
       ],
     ),
     child: ElevatedButton(
-      onPressed: () => _handleRestartButton(quizProvider), // Вынесено в отдельный метод
+      onPressed: () => _handleRestartButton(quizProvider),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
@@ -863,20 +908,18 @@ Widget _buildRestartButton(QuizProvider quizProvider) {
   );
 }
 
-// Добавьте этот метод в класс __ResultContentState
 void _handleRestartButton(QuizProvider quizProvider) async {
   await SoundService.playRestartSound();
   
-  // Проверяем mounted перед использованием контекста
   if (!mounted) return;
   
   quizProvider.resetTest();
   
-  // Еще раз проверяем mounted перед навигацией
   if (!mounted) return;
   
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (context) => const BackgroundVideo(withSound: false, child: HomeScreen())),
     (Route<dynamic> route) => false,
   );
-}}
+}
+}
