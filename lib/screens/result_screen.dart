@@ -25,10 +25,10 @@ class _ResultContent extends StatefulWidget {
   const _ResultContent();
 
   @override
-  __ResultContentState createState() => __ResultContentState();
+  _ResultContentState createState() => _ResultContentState();
 }
 
-class __ResultContentState extends State<_ResultContent> {
+class _ResultContentState extends State<_ResultContent> {
   late int _displayedScore;
   bool _showDetails = false;
   bool _showQuestions = false;
@@ -109,7 +109,7 @@ class __ResultContentState extends State<_ResultContent> {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 4000), // Увеличено с 2000 до 4000 мс
+            duration: const Duration(milliseconds: 4000),
             curve: Curves.easeInOut,
           ).then((_) {
             _hasScrolledToBottom = true;
@@ -153,14 +153,13 @@ class __ResultContentState extends State<_ResultContent> {
                     _buildResultCard(score, quizProvider),
                     const SizedBox(height: 20),
                     
-                    if (_showDetails) _buildDetails(quizProvider),
+                    if (_showDetails) _buildDetails(quizProvider, score),
                     
                     if (_showQuestions) 
                       _buildQuestionsReview(quizProvider),
                     
                     const SizedBox(height: 20),
                     
-                    // Добавлен дополнительный отступ для кнопки
                     SizedBox(
                       height: MediaQuery.of(context).padding.bottom + 20,
                     ),
@@ -319,8 +318,9 @@ class __ResultContentState extends State<_ResultContent> {
     .fadeIn(duration: 600.ms);
   }
 
-  Widget _buildDetails(QuizProvider quizProvider) {
-    final correctAnswers = quizProvider.calculateScore() ~/ 10;
+  Widget _buildDetails(QuizProvider quizProvider, int percentage) {
+    // ИСПРАВЛЕНИЕ: используем correctAnswersCount вместо деления процента на 10
+    final correctAnswers = quizProvider.correctAnswersCount;
     final totalQuestions = quizProvider.questions.length;
     
     return Container(
@@ -416,7 +416,7 @@ class __ResultContentState extends State<_ResultContent> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '${quizProvider.calculateScore()}%',
+                    '$percentage%',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -442,7 +442,7 @@ class __ResultContentState extends State<_ResultContent> {
                 });
                 
                 if (_showQuestions) {
-                  _scrollToBottom(delay: 500); // Увеличена задержка
+                  _scrollToBottom(delay: 500);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -632,7 +632,6 @@ class __ResultContentState extends State<_ResultContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Вопрос с ограничением по ширине
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxWidth: double.infinity,
@@ -653,7 +652,6 @@ class __ResultContentState extends State<_ResultContent> {
                     ),
                     const SizedBox(height: 10),
                     
-                    // Ответ пользователя с ограничением по ширине
                     ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxWidth: double.infinity,
@@ -700,7 +698,6 @@ class __ResultContentState extends State<_ResultContent> {
                     
                     if (!isCorrect) ...[
                       const SizedBox(height: 5),
-                      // Правильный ответ с ограничением по ширине
                       ConstrainedBox(
                         constraints: const BoxConstraints(
                           maxWidth: double.infinity,
@@ -861,59 +858,59 @@ class __ResultContentState extends State<_ResultContent> {
     );
   }
 
-Widget _buildRestartButton(QuizProvider quizProvider) {
-  return Container(
-    width: double.infinity,
-    height: 60,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(15),
-      boxShadow: const [
-        BoxShadow(
-          color: Color.fromRGBO(33, 150, 243, 0.3),
-          blurRadius: 10,
-          offset: Offset(0, 5),
-        ),
-      ],
-    ),
-    child: ElevatedButton(
-      onPressed: () => _handleRestartButton(quizProvider),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.refresh_rounded),
-          const SizedBox(width: 8),
-          Text(
-            quizProvider.selectedLanguage == 'ru' 
-              ? 'Пройти еще раз' 
-              : 'Nochmal versuchen',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+  Widget _buildRestartButton(QuizProvider quizProvider) {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(33, 150, 243, 0.3),
+            blurRadius: 10,
+            offset: Offset(0, 5),
           ),
         ],
       ),
-    )
-    .animate(delay: 1500.ms)
-    .fadeIn()
-    .slideY(begin: 1.0),
-  );
-}
+      child: ElevatedButton(
+        onPressed: () => _handleRestartButton(quizProvider),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[600],
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.refresh_rounded),
+            const SizedBox(width: 8),
+            Text(
+              quizProvider.selectedLanguage == 'ru' 
+                ? 'Пройти еще раз' 
+                : 'Nochmal versuchen',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      )
+      .animate(delay: 1500.ms)
+      .fadeIn()
+      .slideY(begin: 1.0),
+    );
+  }
 
-void _handleRestartButton(QuizProvider quizProvider) async {
+ void _handleRestartButton(QuizProvider quizProvider) async {
   await SoundService.playRestartSound();
   
   if (!mounted) return;
   
-  quizProvider.resetTest();
+  quizProvider.resetTest(); // Теперь этот метод автоматически перемешивает вопросы
   
   if (!mounted) return;
   
@@ -921,5 +918,4 @@ void _handleRestartButton(QuizProvider quizProvider) async {
     MaterialPageRoute(builder: (context) => const BackgroundVideo(withSound: false, child: HomeScreen())),
     (Route<dynamic> route) => false,
   );
-}
-}
+}}
